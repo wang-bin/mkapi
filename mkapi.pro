@@ -2,7 +2,7 @@ QT =
 
 INCLUDEPATH += $$[QT_INSTALL_HEADERS]
 SOURCES += mkapi.cpp
-OTHER_FILES = Makefile
+OTHER_FILES = Makefile template/capi/name_api.*
 
 LLVM_CXXFLAGS = $$system(llvm-config --cxxflags)
 LLVM_COMPONENTS = core mc mcparser support bitreader

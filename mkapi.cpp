@@ -39,7 +39,8 @@ using namespace std;
 struct func_info {
     string name;
     string return_type;
-    vector<string> argv;
+    vector<std::pair<string, string> > argv; // type name pair (TODO: default value?)
+    //vector<string> argv;
 };
 
 std::string trim(const std::string& str)
@@ -47,6 +48,15 @@ std::string trim(const std::string& str)
     string s(str);
     s.erase(0, s.find_first_not_of(' '));
     s.erase(s.find_last_not_of(" \n\t\r") + 1);
+    return s;
+}
+
+// remove space at head and tail. remove tail "," and ")" from CharSourceRange::getTokenRange() (see decl2str() and decl_var_str())
+std::string trim2(const std::string& str)
+{
+    string s(str);
+    s.erase(0, s.find_first_not_of(' '));
+    s.erase(s.find_last_not_of(",) \n\t\r") + 1);
     return s;
 }
 
@@ -76,10 +86,15 @@ std::string decl2str(clang::Decl *d, SourceManager *sm) {
 
 // "T"
 std::string decl2str_without_var(clang::Decl *d, SourceManager *sm) {
-    return Lexer::getSourceText(CharSourceRange::getCharRange(d->getSourceRange()), *sm, LangOptions(), 0);
+    return trim(Lexer::getSourceText(CharSourceRange::getCharRange(d->getSourceRange()), *sm, LangOptions(), 0));
     const char* b = sm->getCharacterData(d->getLocStart());
     const char* e = sm->getCharacterData(d->getLocEnd());
-    return std::string(b, e-b);
+    return trim(std::string(b, e-b));
+}
+
+std::string decl_var_str(clang::Decl *d, SourceManager *sm) {
+    const CharSourceRange csr = CharSourceRange::getTokenRange(CharSourceRange::getCharRange(d->getSourceRange()).getEnd(), CharSourceRange::getTokenRange(d->getSourceRange()).getEnd());
+    return trim2(Lexer::getSourceText(csr, *sm, LangOptions(), 0));
 }
 
 // By implementing RecursiveASTVisitor, we can specify which AST nodes
@@ -131,7 +146,9 @@ public:
                 const char* ptr0 = TheRewriter.getSourceMgr().getCharacterData(sl0);
                 const char* ptr1 = TheRewriter.getSourceMgr().getCharacterData(sl1);
 */
-                fi.argv.push_back(trim(decl2str_without_var(f->getParamDecl(i), &TheRewriter.getSourceMgr())));
+                string decl_t = decl2str_without_var(f->getParamDecl(i), &TheRewriter.getSourceMgr());
+                string decl_v = decl_var_str(f->getParamDecl(i), &TheRewriter.getSourceMgr());
+                fi.argv.push_back(pair<string, string>(decl_t, decl_v));
             }
             mFuncInfo.push_back(fi);
 #if 0
@@ -198,6 +215,8 @@ int main(int argc, char *argv[])
     return 0;
 #endif
     string user_defines;
+    string template_name("capi");
+    string lib_name;
     for (int i = 1; i < argc; ++i) {
         if (argv[i][0] == '-' && argv[i][1] == 'D') {
             user_defines += "#define ";
@@ -211,6 +230,8 @@ int main(int argc, char *argv[])
                 user_defines += string(def);
             }
             user_defines += "\n";
+        } else if (string(argv[i]) == "-name" && i < argc-1) {
+            lib_name = string(argv[i+1]);
         }
     }
 
@@ -289,17 +310,47 @@ int main(int argc, char *argv[])
 #endif
 
     std::vector<func_info> fi = TheConsumer.GetFuncInfo();
-    stringstream stream;
-    for (std::vector<func_info>::const_iterator it = fi.begin(); it != fi.end(); ++it) {
-        std::vector<std::string> params = (*it).argv;
-        stream << "DEFINE_DLLAPI_ARG(" << params.size() << ", " << (*it).return_type << ", " << (*it).name;
-        for (int i = 0; i < params.size(); ++i) {
-            stream << ", " << params[i];
+
+    if (template_name == "dllapi") {
+        stringstream stream;
+        stream << "// This file is create by mkapi (https://github.com/wang-bin/mkapi)" << endl << endl;
+        for (std::vector<func_info>::const_iterator it = fi.begin(); it != fi.end(); ++it) {
+            std::vector<std::pair<std::string, std::string> > params = (*it).argv;
+            stream << "DEFINE_DLLAPI_ARG(" << params.size() << ", " << (*it).return_type << ", " << (*it).name;
+            for (int i = 0; i < params.size(); ++i) {
+                stream << ", " << params[i].first;
+            }
+            stream << ")" << endl;
         }
-        stream << ")" << endl;
+        cout << stream.str() << endl;
+    } else if (template_name == "capi") {
+        stringstream declarations, resolvers, definitions;
+        for (std::vector<func_info>::const_iterator it = fi.begin(); it != fi.end(); ++it) {
+            std::vector<std::pair<std::string, std::string> > params = (*it).argv;
+            declarations << it->return_type << " " << it->name << "(";
+            // CAPI_DEFINE_RESOLVER(argc, return_type, name, argv_no_name)
+            resolvers << "CAPI_DEFINE_RESOLVER(" << params.size() << ", " << it->return_type << ", " << it->name;
+            definitions << "CAPI_DEFINE(" << params.size() << ", " << it->return_type << ", " << it->name;
+            bool first_arg = true;
+            for (int i = 0; i < params.size(); ++i) {
+                if (!first_arg)
+                    declarations << ", ";
+                first_arg = false;
+                declarations << params[i].first;
+                if (!params[i].second.empty())
+                    declarations << " " << params[i].second;
+                resolvers << ", " << params[i].first;
+                definitions << ", " << params[i].first;
+            }
+            declarations << ")" << endl;
+            resolvers << ")" << endl;
+            definitions << ")" << endl;
+        }
+        cout << declarations.str() << endl;
+        cout << resolvers.str() << endl;
+        cout << definitions.str() << endl;
     }
-    
-    cout << stream.str() << endl;
+
     return 0;
 }
 
@@ -385,10 +436,10 @@ void parse_with_tool(const std::vector<std::string> args)
     std::vector<func_info> fi = static_cast<MkApiASTConsumer2*>(&ac)->GetFuncInfo();
     //stringstream stream;
     for (std::vector<func_info>::const_iterator it = fi.begin(); it != fi.end(); ++it) {
-        std::vector<std::string> params = (*it).argv;
+        std::vector<std::pair<std::string, std::string> > params = (*it).argv;
         cout << "DEFINE_DLLAPI_ARG(" << params.size() << ", " << (*it).return_type << ", " << (*it).name;
         for (int i = 0; i < params.size(); ++i) {
-            cout << ", " << params[i];
+            cout << ", " << params[i].first;
         }
         cout << ")" << endl;
     }

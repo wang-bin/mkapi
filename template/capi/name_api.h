@@ -1,6 +1,8 @@
 /******************************************************************************
-    An example to show how to use CAPI
+    mkapi dynamic load code generation for %TEMPLATE% template
     Copyright (C) 2014 Wang Bin <wbsecg1@gmail.com>
+    https://github.com/wang-bin/mkapi
+    https://github.com/wang-bin/capi
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public

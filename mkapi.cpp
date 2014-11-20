@@ -10,6 +10,7 @@
 #include <string>
 #include <sstream>
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include "clang/AST/ASTConsumer.h"
 #include "clang/AST/RecursiveASTVisitor.h"
@@ -86,6 +87,7 @@ std::string decl2str(clang::Decl *d, SourceManager *sm) {
 
 // "T"
 std::string decl2str_without_var(clang::Decl *d, SourceManager *sm) {
+    // FIXME: if parameter is a function, tail ")" may be missing
     return trim(Lexer::getSourceText(CharSourceRange::getCharRange(d->getSourceRange()), *sm, LangOptions(), 0));
     const char* b = sm->getCharacterData(d->getLocStart());
     const char* e = sm->getCharacterData(d->getLocEnd());
@@ -230,7 +232,7 @@ int main(int argc, char *argv[])
                 user_defines += string(def);
             }
             user_defines += "\n";
-        } else if (string(argv[i]) == "-name" && i < argc-1) {
+        } else if (string(argv[i]) == "-name" && i < argc-2) {
             lib_name = string(argv[i+1]);
         }
     }
@@ -241,7 +243,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    string file(argv[1]);
+    string file(argv[argc-1]);
 
     // CompilerInstance will hold the instance of the Clang compiler for us,
     // managing the various objects needed to run the compiler.
@@ -325,9 +327,12 @@ int main(int argc, char *argv[])
         cout << stream.str() << endl;
     } else if (template_name == "capi") {
         stringstream declarations, resolvers, definitions;
+        declarations << "// mkapi code generation BEGIN" << endl;
+        resolvers << "// mkapi code generation BEGIN" << endl;
+        definitions << "// mkapi code generation BEGIN" << endl;
         for (std::vector<func_info>::const_iterator it = fi.begin(); it != fi.end(); ++it) {
             std::vector<std::pair<std::string, std::string> > params = (*it).argv;
-            declarations << it->return_type << " " << it->name << "(";
+            declarations << "    " << it->return_type << " " << it->name << "(";
             // CAPI_DEFINE_RESOLVER(argc, return_type, name, argv_no_name)
             resolvers << "CAPI_DEFINE_RESOLVER(" << params.size() << ", " << it->return_type << ", " << it->name;
             definitions << "CAPI_DEFINE(" << params.size() << ", " << it->return_type << ", " << it->name;
@@ -346,9 +351,24 @@ int main(int argc, char *argv[])
             resolvers << ")" << endl;
             definitions << ")" << endl;
         }
+        declarations << "// mkapi code generation END" << endl;
+        resolvers << "// mkapi code generation END" << endl;
+        definitions << "// mkapi code generation END" << endl;
+
         cout << declarations.str() << endl;
         cout << resolvers.str() << endl;
         cout << definitions.str() << endl;
+
+        ofstream ofs;
+        ofs.open(lib_name + "_declarations", ofstream::trunc);
+        ofs << declarations.str();
+        ofs.close();
+        ofs.open(lib_name + "_resolvers", ofstream::trunc);
+        ofs << resolvers.str();
+        ofs.close();
+        ofs.open(lib_name + "_definitions", ofstream::trunc);
+        ofs << definitions.str();
+        ofs.close();
     }
 
     return 0;

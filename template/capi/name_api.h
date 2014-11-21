@@ -35,7 +35,9 @@ public:
     api();
     ~api();
     bool loaded() const;
+#ifndef CAPI_LINK_%NAME%
     %Declare%
+#endif //CAPI_LINK_%NAME%
 private:
     api_dll *dll;
 };

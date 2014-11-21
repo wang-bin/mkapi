@@ -39,17 +39,26 @@ CAPI_BEGIN_DLL_VER(names, versions)
 #else
 CAPI_BEGIN_DLL(names)
 #endif
+#ifndef CAPI_LINK_%NAME%
 // CAPI_DEFINE_RESOLVER(argc, return_type, name, argv_no_name)
 %DEFINE_RESOLVER%
+#endif //CAPI_LINK_%NAME%
 CAPI_END_DLL()
 
 api::api() : dll(new api_dll()) {
     qDebug("capi::version: %s build %s", capi::version::name, capi::version::build());
 }
 api::~api() { delete dll;}
-bool api::loaded() const { return dll->isLoaded();}
+bool api::loaded() const {
+#ifdef CAPI_LINK_%NAME%
+    return true;
+#else
+    return dll->isLoaded();
+#endif //CAPI_LINK_%NAME%
+}
 
+#ifndef CAPI_LINK_%NAME%
 // CAPI_DEFINE(argc, return_type, name, argv_no_name)
 %DEFINE%
-
+#endif //CAPI_LINK_%NAME%
 } //namespace %Name%

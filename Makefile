@@ -25,9 +25,12 @@ CLANG_LDFLAGS = \
   -lclangAnalysis -lclangARCMigrate \
   -lclangEdit -lclangAST -lclangLex -lclangBasic
 
+CLANG_LDFLAGS += -lz -lncurses
+# 3.4
+CLANG_LDFLAGS += -lclangRewriteCore
 #3.5 no: -lclangRewriteCore
 #3.5 unix
-CLANG_LDFLAGS += -lclangRewrite -lz -lncurses
+#CLANG_LDFLAGS += -lclangRewrite
 
 CXXFLAGS = -g $(LLVM_CXXFLAGS)
 LDFLAGS = $(CLANG_LDFLAGS) $(LLVM_LDFLAGS)

@@ -40,7 +40,13 @@ using namespace std;
 struct func_info {
     string name;
     string return_type;
-    vector<std::pair<string, string> > argv; // type name pair (TODO: default value?)
+    typedef struct {
+        bool is_func_def;
+        string type;
+        string var;
+    } param_t;
+    param_t param;
+    vector<param_t> argv; // type name pair (TODO: default value?)
     //vector<string> argv;
 };
 
@@ -86,9 +92,20 @@ std::string decl2str(clang::Decl *d, SourceManager *sm) {
 }
 
 // "T"
-std::string decl2str_without_var(clang::Decl *d, SourceManager *sm) {
-    // FIXME: if parameter is a function, tail ")" may be missing
-    return trim(Lexer::getSourceText(CharSourceRange::getCharRange(d->getSourceRange()), *sm, LangOptions(), 0));
+std::string decl2str_without_var(clang::Decl *d, SourceManager *sm, bool *is_func_def) {
+    string t = trim(Lexer::getSourceText(CharSourceRange::getCharRange(d->getSourceRange()), *sm, LangOptions(), 0));
+    // FIXME: if parameter is a function, tail ")" may be (always?) missing. here I just prepend it
+    //std::count(t.begin(), t.end(), '(');
+    if (t.find('(') != string::npos) {
+        t += ')';
+        if (is_func_def)
+            *is_func_def = true;
+    } else {
+        if (is_func_def)
+            *is_func_def = false;
+    }
+    return t;
+
     const char* b = sm->getCharacterData(d->getLocStart());
     const char* e = sm->getCharacterData(d->getLocEnd());
     return trim(std::string(b, e-b));
@@ -148,9 +165,10 @@ public:
                 const char* ptr0 = TheRewriter.getSourceMgr().getCharacterData(sl0);
                 const char* ptr1 = TheRewriter.getSourceMgr().getCharacterData(sl1);
 */
-                string decl_t = decl2str_without_var(f->getParamDecl(i), &TheRewriter.getSourceMgr());
-                string decl_v = decl_var_str(f->getParamDecl(i), &TheRewriter.getSourceMgr());
-                fi.argv.push_back(pair<string, string>(decl_t, decl_v));
+                func_info::param_t fip;
+                fip.type = decl2str_without_var(f->getParamDecl(i), &TheRewriter.getSourceMgr(), &fip.is_func_def);
+                fip.var = decl_var_str(f->getParamDecl(i), &TheRewriter.getSourceMgr());
+                fi.argv.push_back(fip);
             }
             mFuncInfo.push_back(fi);
 #if 0
@@ -317,21 +335,21 @@ int main(int argc, char *argv[])
         stringstream stream;
         stream << "// This file is create by mkapi (https://github.com/wang-bin/mkapi)" << endl << endl;
         for (std::vector<func_info>::const_iterator it = fi.begin(); it != fi.end(); ++it) {
-            std::vector<std::pair<std::string, std::string> > params = (*it).argv;
+            std::vector<func_info::param_t> params = (*it).argv;
             stream << "DEFINE_DLLAPI_ARG(" << params.size() << ", " << (*it).return_type << ", " << (*it).name;
             for (int i = 0; i < params.size(); ++i) {
-                stream << ", " << params[i].first;
+                stream << ", " << params[i].type;
             }
             stream << ")" << endl;
         }
         cout << stream.str() << endl;
     } else if (template_name == "capi") {
-        stringstream declarations, resolvers, definitions;
+        stringstream declarations, resolvers, definitions, func_defs;
         declarations << "// mkapi code generation BEGIN" << endl;
         resolvers << "// mkapi code generation BEGIN" << endl;
         definitions << "// mkapi code generation BEGIN" << endl;
         for (std::vector<func_info>::const_iterator it = fi.begin(); it != fi.end(); ++it) {
-            std::vector<std::pair<std::string, std::string> > params = (*it).argv;
+            std::vector<func_info::param_t> params = (*it).argv;
             declarations << "    " << it->return_type << " " << it->name << "(";
             // CAPI_DEFINE_RESOLVER(argc, return_type, name, argv_no_name)
             resolvers << "CAPI_DEFINE_RESOLVER(" << params.size() << ", " << it->return_type << ", " << it->name;
@@ -341,13 +359,37 @@ int main(int argc, char *argv[])
                 if (!first_arg)
                     declarations << ", ";
                 first_arg = false;
-                declarations << params[i].first;
-                if (!params[i].second.empty())
-                    declarations << " " << params[i].second;
-                resolvers << ", " << params[i].first;
-                definitions << ", " << params[i].first;
+                declarations << params[i].type;
+                if (!params[i].var.empty())
+                    declarations << " " << params[i].var;
+                resolvers << ", " << params[i].type;
+
+                if (params[i].is_func_def) {
+                    string t = params[i].type;
+                    int b = t.find('(');
+                    int e = t.find(')', b);
+                    b = t.find('*', b);
+                    if (b > e) {
+                        cerr << "ERROR: function type does not supported: " << t << endl;
+                        abort();
+                    }
+                    string def = trim(t.substr(b+1, e-b-1));
+                    if (def.empty()) {
+                        string n;
+                        stringstream is;
+                        is << i;
+                        is >> n;
+                        def = it->name + "_cb" + n;
+                        func_defs << "typedef " << t.substr(0, b+1) << def << t.substr(e) << ";" << endl;
+                    } else {
+                        func_defs << "typedef " << t << ";" << endl;
+                    }
+                    definitions << ", " << def;
+                } else {
+                    definitions << ", " << params[i].type;
+                }
             }
-            declarations << ")" << endl;
+            declarations << ");" << endl;
             resolvers << ")" << endl;
             definitions << ")" << endl;
         }
@@ -357,6 +399,7 @@ int main(int argc, char *argv[])
 
         cout << declarations.str() << endl;
         cout << resolvers.str() << endl;
+        cout << func_defs.str() << endl;
         cout << definitions.str() << endl;
 
         ofstream ofs;
@@ -367,6 +410,7 @@ int main(int argc, char *argv[])
         ofs << resolvers.str();
         ofs.close();
         ofs.open(lib_name + "_definitions", ofstream::trunc);
+        ofs << func_defs.str();
         ofs << definitions.str();
         ofs.close();
     }
@@ -456,10 +500,10 @@ void parse_with_tool(const std::vector<std::string> args)
     std::vector<func_info> fi = static_cast<MkApiASTConsumer2*>(&ac)->GetFuncInfo();
     //stringstream stream;
     for (std::vector<func_info>::const_iterator it = fi.begin(); it != fi.end(); ++it) {
-        std::vector<std::pair<std::string, std::string> > params = (*it).argv;
+        std::vector<func_info::param_t> params = (*it).argv;
         cout << "DEFINE_DLLAPI_ARG(" << params.size() << ", " << (*it).return_type << ", " << (*it).name;
         for (int i = 0; i < params.size(); ++i) {
-            cout << ", " << params[i].first;
+            cout << ", " << params[i].type;
         }
         cout << ")" << endl;
     }

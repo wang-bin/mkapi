@@ -33,7 +33,7 @@ static const char* names[] = {
 static const int versions[] = {
     capi::NoVersion,
     capi::EndVersion
-}
+};
 CAPI_BEGIN_DLL_VER(names, versions)
 #else
 CAPI_BEGIN_DLL(names)

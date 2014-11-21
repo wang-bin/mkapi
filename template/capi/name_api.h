@@ -34,6 +34,7 @@ class api
 public:
     api();
     ~api();
+    bool loaded() const;
     %Declare%
 private:
     api_dll *dll;

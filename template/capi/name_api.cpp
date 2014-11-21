@@ -18,7 +18,8 @@
     License along with this library; if not, write to the Free Software
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 ******************************************************************************/
-#define DEBUG
+#define DEBUG_RESOLVE
+#define DEBUG_LOAD
 
 #include "%name%_api.h"
 #include "capi.h"
@@ -46,6 +47,7 @@ api::api() : dll(new api_dll()) {
     qDebug("capi::version: %s build %s", capi::version::name, capi::version::build());
 }
 api::~api() { delete dll;}
+bool api::loaded() const { return dll->isLoaded();}
 
 // CAPI_DEFINE(argc, return_type, name, argv_no_name)
 %DEFINE%

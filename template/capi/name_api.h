@@ -33,8 +33,8 @@ class api
 {
 public:
     api();
-    ~api();
-    bool loaded() const;
+    virtual ~api();
+    virtual bool loaded() const; // user may inherits multiple api classes: final::loaded() { return base1::loaded() && base2::loaded();}
 #ifndef CAPI_LINK_%NAME%
     %Declare%
 #endif //CAPI_LINK_%NAME%

@@ -374,16 +374,17 @@ int main(int argc, char *argv[])
                         abort();
                     }
                     string def = trim(t.substr(b+1, e-b-1));
+                    string n;
+                    stringstream is;
+                    is << i;
+                    is >> n;
                     if (def.empty()) {
-                        string n;
-                        stringstream is;
-                        is << i;
-                        is >> n;
                         def = it->name + "_cb" + n;
-                        func_defs << "typedef " << t.substr(0, b+1) << def << t.substr(e) << ";" << endl;
                     } else {
-                        func_defs << "typedef " << t << ";" << endl;
+                        def = it->name + "_" + def + n;
+                        //func_defs << "typedef " << t << ";" << endl;
                     }
+                    func_defs << "typedef " << t.substr(0, b+1) << def << t.substr(e) << ";" << endl;
                     definitions << ", " << def;
                 } else {
                     definitions << ", " << params[i].type;

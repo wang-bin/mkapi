@@ -30,10 +30,12 @@ static const char* names[] = {
     NULL
 };
 
-#ifdef CAPI_%NAME%_VERSION
+#if CAPI_HAS_%NAME%_VERSION
 static const int versions[] = {
     capi::NoVersion,
-    capi::EndVersion
+// the following line will be replaced by the content of config/%NAME%/version if exists
+    %VERSIONS%
+    , capi::EndVersion
 };
 CAPI_BEGIN_DLL_VER(names, versions)
 #else

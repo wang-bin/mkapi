@@ -24,6 +24,7 @@
 #include "%name%_api.h"
 #ifndef CAPI_LINK_%NAME%
 #include "capi.h"
+#include <QtCore/QLibrary>
 #endif
 
 namespace %Name% {
@@ -41,9 +42,9 @@ static const int versions[] = {
     %VERSIONS%
     , capi::EndVersion
 };
-CAPI_BEGIN_DLL_VER(names, versions)
+CAPI_BEGIN_DLL_VER(names, versions, QLibrary)
 # else
-CAPI_BEGIN_DLL(names)
+CAPI_BEGIN_DLL(names, QLibrary)
 # endif //CAPI_HAS_%NAME%_VERSION
 // CAPI_DEFINE_RESOLVER(argc, return_type, name, argv_no_name)
 %DEFINE_RESOLVER%

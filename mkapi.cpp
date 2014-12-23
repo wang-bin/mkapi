@@ -352,8 +352,9 @@ int main(int argc, char *argv[])
             std::vector<func_info::param_t> params = (*it).argv;
             declarations << "    " << it->return_type << " " << it->name << "(";
             // CAPI_DEFINE_RESOLVER(argc, return_type, name, argv_no_name)
-            resolvers << "CAPI_DEFINE_RESOLVER(" << params.size() << ", " << it->return_type << ", " << it->name;
-            definitions << "CAPI_DEFINE(" << params.size() << ", " << it->return_type << ", " << it->name;
+            // TODO: linkage resolver
+            resolvers << "CAPI_DEFINE_RESOLVER(" << it->return_type << ", " << it->name << ", CAPI_ARG" << params.size() << "(";
+            definitions << "CAPI_DEFINE(" << it->return_type << ", " << it->name << ", CAPI_ARG" << params.size() << "(";
             bool first_arg = true;
             for (int i = 0; i < params.size(); ++i) {
                 if (!first_arg)
@@ -362,7 +363,9 @@ int main(int argc, char *argv[])
                 declarations << params[i].type;
                 if (!params[i].var.empty())
                     declarations << " " << params[i].var;
-                resolvers << ", " << params[i].type;
+                if (i > 0)
+                    resolvers << ", ";
+                resolvers << params[i].type;
 
                 if (params[i].is_func_def) {
                     string t = params[i].type;
@@ -385,14 +388,18 @@ int main(int argc, char *argv[])
                         //func_defs << "typedef " << t << ";" << endl;
                     }
                     func_defs << "typedef " << t.substr(0, b+1) << def << t.substr(e) << ";" << endl;
-                    definitions << ", " << def;
+                    if (i > 0)
+                        definitions << ", ";
+                    definitions << def;
                 } else {
-                    definitions << ", " << params[i].type;
+                    if (i > 0)
+                        definitions << ", ";
+                    definitions << params[i].type;
                 }
             }
             declarations << ");" << endl;
-            resolvers << ")" << endl;
-            definitions << ")" << endl;
+            resolvers << "))" << endl;
+            definitions << "))" << endl;
         }
         declarations << "// mkapi code generation END" << endl;
         resolvers << "// mkapi code generation END" << endl;

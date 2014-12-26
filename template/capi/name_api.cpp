@@ -38,7 +38,7 @@ static const char* names[] = {
 # if CAPI_HAS_%NAME%_VERSION
 static const int versions[] = {
     capi::NoVersion,
-// the following line will be replaced by the content of config/%NAME%/version if exists
+// the following line will be replaced by the content of config/%Name%/version if exists
     %VERSIONS%
     , capi::EndVersion
 };

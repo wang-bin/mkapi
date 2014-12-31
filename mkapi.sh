@@ -56,6 +56,7 @@ mv ${NAME}_definitions /tmp/mkapi/definitions
 
 #TODO: author info
 echo "generating ${NAME}_api.h..."
+# TODO: find config/name/template.{h,cpp} first
 #cat $COPY | sed "s/%YEAR%/$YEAR/g" > ${CLASS}.h
 if [ -f config/${NAME}/include ]; then
   cp -af config/${NAME}/include /tmp/mkapi
@@ -77,10 +78,11 @@ if [ -f config/${NAME}/version ]; then
 else
   cp -af template/${TEMPLATE}/name_api.cpp /tmp/mkapi
 fi
-SKIP_REG=`cat config/${NAME}/skip |xargs |tr ' ' '|'`
+[ -f config/${NAME}/skip ] && SKIP_REG=`cat config/${NAME}/skip |xargs |tr ' ' '|'`
 cat /tmp/mkapi/name_api.cpp |sed "s/%Name%/$NAME/g" | sed "s/%NAME%/$NAME_U/g"  | sed "s/%name%/$NAME_L/g" \
     |sed "s,%TEMPLATE%,$TEMPLATE,g" \
     |sed -n '/%DEFINE_RESOLVER%/!p;/%DEFINE_RESOLVER%/r/tmp/mkapi/resolvers' \
     |sed -n '/%DEFINE%/!p;/%DEFINE%/r/tmp/mkapi/definitions' \
-    |sed -E "/$SKIP_REG/s/^/\/\//" \
-     >${NAME}_api.cpp
+     >/tmp/${NAME}_api.cpp
+
+test -n "$SKIP_REG" && sed -E "/$SKIP_REG/s/^/\/\//" /tmp/${NAME}_api.cpp > ${NAME}_api.cpp || mv {/tmp/,}${NAME}_api.cpp

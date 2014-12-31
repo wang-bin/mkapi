@@ -363,13 +363,13 @@ int main(int argc, char *argv[])
         for (std::vector<func_info>::const_iterator it = fi.begin(); it != fi.end(); ++it) {
             std::vector<func_info::param_t> params = (*it).argv;
             declarations << "    " << it->return_type << " " << it->name << "(";
-            // CAPI_DEFINE_RESOLVER(argc, return_type, name, argv_no_name)
+            // CAPI_DEFINE_ENTRY(argc, return_type, name, argv_no_name)
             // TODO: linkage resolver
             cout << " linkage is: " << it->linkage << endl;
             if (it->linkage.empty())
-                resolvers << "CAPI_DEFINE_RESOLVER(" << it->return_type << ", " << it->name << ", CAPI_ARG" << params.size() << "(";
+                resolvers << "CAPI_DEFINE_ENTRY(" << it->return_type << ", " << it->name << ", CAPI_ARG" << params.size() << "(";
             else
-                resolvers << "CAPI_DEFINE_M_RESOLVER(" << it->return_type << ", " << it->linkage << ", " << it->name << ", CAPI_ARG" << params.size() << "(";
+                resolvers << "CAPI_DEFINE_M_ENTRY(" << it->return_type << ", " << it->linkage << ", " << it->name << ", CAPI_ARG" << params.size() << "(";
             definitions << "CAPI_DEFINE(" << it->return_type << ", " << it->name << ", CAPI_ARG" << params.size() << "(";
             bool first_arg = true;
             for (int i = 0; i < params.size(); ++i) {

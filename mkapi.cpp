@@ -40,6 +40,7 @@ using namespace std;
 struct func_info {
     string name;
     string return_type;
+    string linkage;
     typedef struct {
         bool is_func_def;
         string type;
@@ -154,10 +155,21 @@ public:
             func_info fi;
             fi.name = FuncName;
             fi.return_type = TypeStr;
-            unsigned nbp = f->getNumParams();
-            for (int i = 0; i < nbp; ++i) {
+            // s: name is a macro in source, but fi.name is real not macro
+            CharSourceRange csr = CharSourceRange::getTokenRange(f->getLocStart(), f->getNameInfo().getLocStart());//tsi->getTypeLoc().getLocEnd(), f->getNameInfo().getLocStart());
+            const std::string s = Lexer::getSourceText(csr, TheRewriter.getSourceMgr(), LangOptions(), 0);
+            // why s contains func name?
+            csr = CharSourceRange::getTokenRange(f->getNameInfo().getSourceRange());//tsi->getTypeLoc().getLocEnd(), f->getNameInfo().getLocStart());
+            const std::string s_name = Lexer::getSourceText(csr, TheRewriter.getSourceMgr(), LangOptions(), 0);
+            const size_t p1 = s.find(fi.return_type) + fi.return_type.size();
+            const size_t p2 = s.find(s_name, p1);
+            if (p2 != string::npos) {
+                fi.linkage = trim(s.substr(p1, p2 - p1));
+                //std::cout << p1 << "-" << p2 << " linkage: " << fi.linkage << std::endl;
+            }
+            for (FunctionDecl::param_iterator it = f->param_begin(); it != f->param_end(); ++it) {
                 //getTypeSourceInfo()->getType() and getOriginalType() is the final type. e.g. for size_t, the result may be unsigned int, but we need only size_t
-                //fi.argv.push_back(f->getParamDecl(i)->getTypeSourceInfo()->getType().getAsString());//->getOriginalType().getAsString());
+                //fi.argv.push_back((*it)->getTypeSourceInfo()->getType().getAsString());//->getOriginalType().getAsString());
 /*
                 TypeLoc tl = f->getParamDecl(i)->getTypeSourceInfo()->getTypeLoc();
                 SourceLocation sl0 = tl.getBeginLoc();
@@ -166,8 +178,8 @@ public:
                 const char* ptr1 = TheRewriter.getSourceMgr().getCharacterData(sl1);
 */
                 func_info::param_t fip;
-                fip.type = decl2str_without_var(f->getParamDecl(i), &TheRewriter.getSourceMgr(), &fip.is_func_def);
-                fip.var = decl_var_str(f->getParamDecl(i), &TheRewriter.getSourceMgr());
+                fip.type = decl2str_without_var(*it, &TheRewriter.getSourceMgr(), &fip.is_func_def);
+                fip.var = decl_var_str(*it, &TheRewriter.getSourceMgr());
                 fi.argv.push_back(fip);
             }
             mFuncInfo.push_back(fi);
@@ -353,7 +365,11 @@ int main(int argc, char *argv[])
             declarations << "    " << it->return_type << " " << it->name << "(";
             // CAPI_DEFINE_RESOLVER(argc, return_type, name, argv_no_name)
             // TODO: linkage resolver
-            resolvers << "CAPI_DEFINE_RESOLVER(" << it->return_type << ", " << it->name << ", CAPI_ARG" << params.size() << "(";
+            cout << " linkage is: " << it->linkage << endl;
+            if (it->linkage.empty())
+                resolvers << "CAPI_DEFINE_RESOLVER(" << it->return_type << ", " << it->name << ", CAPI_ARG" << params.size() << "(";
+            else
+                resolvers << "CAPI_DEFINE_M_RESOLVER(" << it->return_type << ", " << it->linkage << ", " << it->name << ", CAPI_ARG" << params.size() << "(";
             definitions << "CAPI_DEFINE(" << it->return_type << ", " << it->name << ", CAPI_ARG" << params.size() << "(";
             bool first_arg = true;
             for (int i = 0; i < params.size(); ++i) {

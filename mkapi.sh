@@ -12,6 +12,8 @@ ARGV=$@
 while [ $# -gt 0 ]; do
   VAR=
   case "$1" in
+  -D*|-I*|-L*|-l*)
+    ;;
   --*=*)
     PAIR=${1##--}
     VAR=${PAIRE%=*}

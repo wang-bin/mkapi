@@ -23,25 +23,35 @@
 #define %NAME%_API_H
 
 // no need to include the C header if only functions declared there
-extern "C" {
+#ifndef CAPI_LINK_%NAME%
+namespace capi { // avoid ambiguity if call function directly
+#endif
 // the following line will be replaced by the content of config/%NAME%/include if exists
 #include "%Name%.h"
+#ifndef CAPI_LINK_%NAME%
 }
+#endif
 
 namespace %Name% {
+#ifdef %NAME%_CAPI_NS
+namespace capi {
+#else
 class api_dll;
 class api
 {
+    api_dll *dll;
 public:
     api();
     virtual ~api();
     virtual bool loaded() const; // user may inherits multiple api classes: final::loaded() { return base1::loaded() && base2::loaded();}
+#endif %NAME%_CAPI_NS
 #ifndef CAPI_LINK_%NAME%
     %Declare%
 #endif //CAPI_LINK_%NAME%
-private:
-    api_dll *dll;
-};
+}
+#ifndef %NAME%_CAPI_NS
+;
+#endif
 } //namespace %Name%
 
 

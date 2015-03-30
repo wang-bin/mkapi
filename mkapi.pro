@@ -1,6 +1,6 @@
 QT =
 
-INCLUDEPATH += $$[QT_INSTALL_HEADERS]
+INCLUDEPATH += /Users/wangbin/dev/llvm342/include $$[QT_INSTALL_HEADERS]
 SOURCES += mkapi.cpp
 OTHER_FILES = \
             mkapi.sh \

@@ -21,15 +21,16 @@
 #define DEBUG_RESOLVE
 #define DEBUG_LOAD
 
-#include "%name%_api.h"
 #ifndef CAPI_LINK_%NAME%
-#include "capi.h"
 #include <QtCore/QLibrary>
+#include "capi.h"
 #endif
+#include "%name%_api.h" //include last to avoid covering types later
 
 namespace %Name% {
 #ifdef CAPI_LINK_%NAME%
 class api_dll {public: bool isLoaded() const {return true;}};
+CAPI_DEFINE_DLL
 #else
 static const char* names[] = {
     "%Name%",
@@ -49,10 +50,8 @@ CAPI_BEGIN_DLL(names, QLibrary)
 // CAPI_DEFINE_RESOLVER(argc, return_type, name, argv_no_name)
 %DEFINE_RESOLVER%
 CAPI_END_DLL()
+CAPI_DEFINE_DLL
 // CAPI_DEFINE(argc, return_type, name, argv_no_name)
 %DEFINE%
 #endif //CAPI_LINK_%NAME%
-api::api() : dll(new api_dll()) {}
-api::~api() { delete dll;}
-bool api::loaded() const { return dll->isLoaded(); }
 } //namespace %Name%

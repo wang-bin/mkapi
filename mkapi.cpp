@@ -21,10 +21,12 @@
 #include "clang/Basic/TargetOptions.h"
 #include "clang/Basic/TargetInfo.h"
 #include "clang/Frontend/CompilerInstance.h"
+#include "clang/Lex/HeaderSearch.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Parse/ParseAST.h"
 #include "clang/Rewrite/Core/Rewriter.h"
 #include "clang/Edit/Rewriters.h"
+#include "clang/Frontend/Utils.h"
 #include "llvm/Support/Host.h"
 #include "llvm/Support/raw_ostream.h"
 
@@ -247,29 +249,38 @@ int main(int argc, char *argv[])
     return 0;
 #endif
     string user_defines;
+    vector<string> include_paths;
     string template_name("capi");
     string lib_name;
     for (int i = 1; i < argc; ++i) {
-        if (argv[i][0] == '-' && argv[i][1] == 'D') {
-            user_defines += "#define ";
-            char *def = argv[i]+2;
-            char* eq_pos = strchr(def, '=');
-            if (eq_pos) {
-                user_defines += string(def, eq_pos - def);
-                user_defines += " ";
-                user_defines += string(def+1);
-            } else {
-                user_defines += string(def);
+        if (argv[i][0] == '-') {
+            char *k = argv[i]+1;
+            if (k[0] == 'D') {
+                user_defines += "#define ";
+                char *def = k+1;
+                char* eq_pos = strchr(def, '=');
+                if (eq_pos) {
+                    user_defines += string(def, eq_pos - def);
+                    user_defines += " ";
+                    user_defines += string(def+1);
+                } else {
+                    user_defines += string(def);
+                }
+                user_defines += "\n";
+            } else if (k[0] == 'I') {
+                if (k[1])
+                    include_paths.push_back(k+1);
+                else
+                    include_paths.push_back(argv[++i]);
+            } else if (string(k) == "name" && i < argc-2) {
+                lib_name = string(argv[++i]);
             }
-            user_defines += "\n";
-        } else if (string(argv[i]) == "-name" && i < argc-2) {
-            lib_name = string(argv[i+1]);
         }
     }
 
 
     if (argc < 2) {
-        llvm::errs() << "Usage: mkapi filename [-Ddefine1 -Ddefine2...]\n";
+        llvm::errs() << "Usage: mkapi filename [-Ddefine1 -Ddefine2... -Idir1 -Idir2...]\n";
         return 1;
     }
 
@@ -305,7 +316,18 @@ int main(int argc, char *argv[])
         clang::Preprocessor &PP = TheCompInst.getPreprocessor();
         PP.setPredefines(PP.getPredefines() + user_defines);
     }
-
+    if (!include_paths.empty()) {
+        for (int i = 0; i < include_paths.size(); ++i) {
+            TheCompInst.getHeaderSearchOpts().AddPath(include_paths[i], clang::frontend::Angled, false, false);
+            //TheCompInst.getHeaderSearchOpts().AddPath(include_paths[i], clang::frontend::Quoted, false, false);
+            //TheCompInst.getHeaderSearchOpts().AddPath(include_paths[i], clang::frontend::System, false, false);
+        }
+    }
+    // MUST call this for include pahts
+    clang::InitializePreprocessor(TheCompInst.getPreprocessor(),
+                                  TheCompInst.getPreprocessorOpts(),
+                                  TheCompInst.getHeaderSearchOpts(),
+                                  TheCompInst.getFrontendOpts());
 
     //cout << "predefines: " << TheCompInst.getPreprocessor().getPredefines() << endl;
     // A Rewriter helps us manage the code rewriting task.

@@ -2,7 +2,7 @@
 #TODO: auto add virtual functions
 
 help(){
-  echo "Usage: $0 [-name Name] [-template Template] header_file"
+  echo "Usage: $0 [-name Name] [-template Template] [-Ddef1 -Ddef2 ...] [-Iinc1 -I inc2 ...] header_file"
   echo "Or $0 [--name=Name] [--template=Template] header_file"
   exit 0
 }
@@ -12,7 +12,10 @@ ARGV=$@
 while [ $# -gt 0 ]; do
   VAR=
   case "$1" in
-  -D*|-I*|-L*|-l*)
+  -I|-L|-l) # -I inc
+    shift
+    ;;
+  -D*|-I*|-L*|-l*) # -Iinc
     ;;
   --*=*)
     PAIR=${1##--}
@@ -28,7 +31,7 @@ while [ $# -gt 0 ]; do
     break
     ;;
   esac
-  if [ -n "VAR" ]; then
+  if [ -n "$VAR" ]; then
     VAR_U=`echo $VAR | tr "[:lower:]" "[:upper:]"`
     echo "$VAR_U"
     eval $VAR_U=$VAL

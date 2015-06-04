@@ -20,7 +20,7 @@
 ******************************************************************************/
 #define DEBUG_RESOLVE
 #define DEBUG_LOAD
-
+//#define CAPI_IS_LAZY_RESOLVE 0
 #ifndef CAPI_LINK_%NAME%
 #include <QtCore/QLibrary>
 #include "capi.h"
@@ -38,10 +38,10 @@ static const char* names[] = {
 };
 # if CAPI_HAS_%NAME%_VERSION
 static const int versions[] = {
-    capi::NoVersion,
+    ::capi::NoVersion,
 // the following line will be replaced by the content of config/%Name%/version if exists
     %VERSIONS%
-    , capi::EndVersion
+    , ::capi::EndVersion
 };
 CAPI_BEGIN_DLL_VER(names, versions, QLibrary)
 # else

@@ -23,19 +23,23 @@
 #define %NAME%_API_H
 
 // no need to include the C header if only functions declared there
-#ifndef CAPI_LINK_%NAME%
-namespace capi { // avoid ambiguity if call function directly
+#ifndef CAPI_LINK_ASS
+namespace ass {
+namespace capi {
+#else
+extern "C" {
 #endif
 // the following line will be replaced by the content of config/%NAME%/include if exists
 #include "%Name%.h"
-#ifndef CAPI_LINK_%NAME%
+#ifndef CAPI_LINK_ASS
 }
 #endif
+}
 
 namespace %Name% {
-#ifdef %NAME%_CAPI_NS
-namespace capi {
-#else
+#ifndef CAPI_LINK_%NAME%
+using namespace capi; // original header is in namespace capi, types are changed
+#endif // CAPI_LINK_%NAME%
 class api_dll;
 class api
 {
@@ -44,15 +48,15 @@ public:
     api();
     virtual ~api();
     virtual bool loaded() const; // user may inherits multiple api classes: final::loaded() { return base1::loaded() && base2::loaded();}
-#endif %NAME%_CAPI_NS
-#ifndef CAPI_LINK_%NAME%
+#if !defined(CAPI_LINK_%NAME%) && !defined(%NAME%_CAPI_NS)
     %Declare%
-#endif //CAPI_LINK_%NAME%
-}
-#ifndef %NAME%_CAPI_NS
-;
-#endif
+#endif // !defined(CAPI_LINK_%NAME%) && !defined(%NAME%_CAPI_NS)
+};
 } //namespace %Name%
 
-
+#ifdef ASS_CAPI_NS
+using namespace %Name%::capi;
+#else
+using namespace %Name%;
+#endif
 #endif // %NAME%_API_H

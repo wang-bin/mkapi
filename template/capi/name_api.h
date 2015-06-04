@@ -54,9 +54,11 @@ public:
 };
 } //namespace %Name%
 
+#ifndef %NAME%_CAPI_BUILD // avoid ambiguous in %Name%_api.cpp
 #ifdef %NAME%_CAPI_NS
 using namespace %Name%::capi;
 #else
 using namespace %Name%;
 #endif
+#endif //%NAME%_CAPI_BUILD
 #endif // %NAME%_API_H

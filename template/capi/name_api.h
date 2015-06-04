@@ -23,15 +23,15 @@
 #define %NAME%_API_H
 
 // no need to include the C header if only functions declared there
-#ifndef CAPI_LINK_ASS
-namespace ass {
+#ifndef CAPI_LINK_%NAME%
+namespace %Name% {
 namespace capi {
 #else
 extern "C" {
 #endif
 // the following line will be replaced by the content of config/%NAME%/include if exists
 #include "%Name%.h"
-#ifndef CAPI_LINK_ASS
+#ifndef CAPI_LINK_%NAME%
 }
 #endif
 }
@@ -54,7 +54,7 @@ public:
 };
 } //namespace %Name%
 
-#ifdef ASS_CAPI_NS
+#ifdef %NAME%_CAPI_NS
 using namespace %Name%::capi;
 #else
 using namespace %Name%;

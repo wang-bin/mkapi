@@ -23,8 +23,8 @@
 //#define CAPI_IS_LAZY_RESOLVE 0
 #ifndef CAPI_LINK_%NAME%
 #include <QtCore/QLibrary>
+#endif //CAPI_LINK_%NAME%
 #include "capi.h"
-#endif
 #include "%name%_api.h" //include last to avoid covering types later
 
 namespace %Name% {

@@ -1,6 +1,6 @@
 /******************************************************************************
     mkapi dynamic load code generation for %TEMPLATE% template
-    Copyright (C) 2014 Wang Bin <wbsecg1@gmail.com>
+    Copyright (C) 2014-2015 Wang Bin <wbsecg1@gmail.com>
     https://github.com/wang-bin/mkapi
     https://github.com/wang-bin/capi
 
@@ -24,14 +24,15 @@
 //#define CAPI_IS_LAZY_RESOLVE 0
 #ifndef CAPI_LINK_%NAME%
 #include <QtCore/QLibrary>
-#endif //CAPI_LINK_%NAME%
 #include "capi.h"
+#endif //CAPI_LINK_%NAME%
 #include "%name%_api.h" //include last to avoid covering types later
 
 namespace %Name% {
 #ifdef CAPI_LINK_%NAME%
-class api_dll {public: bool isLoaded() const {return true;}};
-CAPI_DEFINE_DLL
+api::api(){dll=0;}
+api::~api(){}
+bool api::loaded() const{return true;}
 #else
 static const char* names[] = {
     "%Name%",

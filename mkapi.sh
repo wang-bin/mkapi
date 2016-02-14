@@ -2,39 +2,47 @@
 #TODO: auto add virtual functions
 
 help(){
-  echo "Usage: $0 [-name Name] [-template Template] [-Ddef1 -Ddef2 ...] [-Iinc1 -I inc2 ...] header_file"
-  echo "Or $0 [--name=Name] [--template=Template] header_file"
+  echo "Usage: $0 [-name Name] [-template Template] [-Ddef1 -Ddef2 ...] [-Iinc1 -I inc2 ...] header_files"
+  echo "Or $0 [--name=Name] [--template=Template] header_files"
+  echo 'If header files contains at least 2 files, they will be merged into 1 file ${Name}.h'
   exit 0
 }
 
 ARGV=$@
-
+HEADERS=()
+ARGV2=()
 while [ $# -gt 0 ]; do
   VAR=
   case "$1" in
   -I|-L|-l) # -I inc
+    ARGV2+=($1)
     shift
-    ;;
+   ;;
   -D*|-I*|-L*|-l*) # -Iinc
+    ARGV2+=($1)
     ;;
   --*=*)
+    ARGV2+=($1)
     PAIR=${1##--}
     VAR=${PAIRE%=*}
     VAL=${PAIR##*=}
     ;;
   -*)
+    ARGV2+=($1)
     VAR=${1##-}
     shift
     VAL=$1
     ;;
   *)
-    break
+    HEADERS+=(${1})
+    #break
     ;;
   esac
   if [ -n "$VAR" ]; then
     VAR_U=`echo $VAR | tr "[:lower:]" "[:upper:]"`
     echo "$VAR_U"
     eval $VAR_U=$VAL
+    ARGV2+=($1)
   fi
   shift
 done
@@ -43,12 +51,18 @@ done
 [ -n "$TEMPLATE" ] || TEMPLATE=capi
 echo "name: $NAME, template: $TEMPLATE"
 
-echo "./mkapi $ARGV >/dev/null"
+HEADER=${HEADERS[0]}
+if [ ${#HEADERS[@]} -gt 1 ]; then
+  HEADER=/tmp/${NAME}.h
+  echo "cat ${HEADERS[@]} > $HEADER"
+  cat ${HEADERS[@]} > $HEADER
+fi
+echo "./mkapi ${ARGV2[@]} $HEADER >/dev/null"
 [ -e mkapi ] || {
   echo "build mkapi first (run make. need clang3.4 sdk)"
   exit 0
 }
-./mkapi $ARGV >/dev/null
+./mkapi ${ARGV2[@]} $HEADER >/dev/null
 
 NAME_U=`echo $NAME | tr "[:lower:]" "[:upper:]"`
 NAME_L=`echo $NAME | tr "[:upper:]" "[:lower:]"`

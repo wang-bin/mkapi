@@ -1,6 +1,6 @@
 /******************************************************************************
     mkapi dynamic load code generation for %TEMPLATE% template
-    Copyright (C) 2014-2015 Wang Bin <wbsecg1@gmail.com>
+    Copyright (C) 2014-2016 Wang Bin <wbsecg1@gmail.com>
     https://github.com/wang-bin/mkapi
     https://github.com/wang-bin/capi
 
@@ -35,18 +35,23 @@ bool api::loaded() const{return true;}
 #else
 static const char* names[] = {
     "%Name%",
+    //%LIBS%
     NULL
 };
+
+class user_dso : public ::capi::dso {}; //%DSO%
+
 # if CAPI_HAS_%NAME%_VERSION
 static const int versions[] = {
     ::capi::NoVersion,
 // the following line will be replaced by the content of config/%Name%/version if exists
-    %VERSIONS%
-    , ::capi::EndVersion
+    //%VERSIONS%
+    ::capi::EndVersion
 };
-CAPI_BEGIN_DLL_VER(names, versions, ::capi::dso)
+
+CAPI_BEGIN_DLL_VER(names, versions, user_dso)
 # else
-CAPI_BEGIN_DLL(names, QLibrary)
+CAPI_BEGIN_DLL(names, user_dso)
 # endif //CAPI_HAS_%NAME%_VERSION
 // CAPI_DEFINE_RESOLVER(argc, return_type, name, argv_no_name)
 %DEFINE_RESOLVER%

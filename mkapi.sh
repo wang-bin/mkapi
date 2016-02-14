@@ -17,6 +17,7 @@ while [ $# -gt 0 ]; do
   -I|-L|-l) # -I inc
     ARGV2+=($1)
     shift
+    ARGV2+=($1)
    ;;
   -D*|-I*|-L*|-l*) # -Iinc
     ARGV2+=($1)
@@ -31,6 +32,7 @@ while [ $# -gt 0 ]; do
     ARGV2+=($1)
     VAR=${1##-}
     shift
+    ARGV2+=($1)
     VAL=$1
     ;;
   *)
@@ -42,7 +44,6 @@ while [ $# -gt 0 ]; do
     VAR_U=`echo $VAR | tr "[:lower:]" "[:upper:]"`
     echo "$VAR_U"
     eval $VAR_U=$VAL
-    ARGV2+=($1)
   fi
   shift
 done
@@ -90,13 +91,27 @@ cat /tmp/mkapi/name_api.h |sed "s/%Name%/$NAME/g" | sed "s/%NAME%/$NAME_U/g"  | 
     >${NAME}_api.h
 
 echo "generating ${NAME}_api.cpp..."
+cp -af template/${TEMPLATE}/name_api.cpp /tmp/name_api.cpp.in
+cp -af template/${TEMPLATE}/name_api.cpp /tmp/mkapi
 if [ -f config/${NAME}/version ]; then
   cp -af config/${NAME}/version /tmp/mkapi
-  cat template/${TEMPLATE}/name_api.cpp |sed 's,CAPI_HAS_%NAME%_VERSION,1,g' |sed -n '/%VERSIONS%/!p;/%VERSIONS%/r/tmp/mkapi/version' \
+  cat /tmp/name_api.cpp.in |sed 's,CAPI_HAS_%NAME%_VERSION,1,g' |sed -n '/%VERSIONS%/!p;/%VERSIONS%/r/tmp/mkapi/version' \
   > /tmp/mkapi/name_api.cpp
-else
-  cp -af template/${TEMPLATE}/name_api.cpp /tmp/mkapi
+  cp -af /tmp/mkapi/name_api.cpp /tmp/name_api.cpp.in
 fi
+if [ -f config/${NAME}/lib ]; then
+  cp -af config/${NAME}/lib /tmp/mkapi
+  cat /tmp/name_api.cpp.in |sed -n '/%LIBS%/!p;/%LIBS%/r/tmp/mkapi/lib' \
+  > /tmp/mkapi/name_api.cpp
+  cp -af /tmp/mkapi/name_api.cpp /tmp/name_api.cpp.in
+fi
+if [ -f config/${NAME}/dso ]; then
+  cp -af config/${NAME}/dso /tmp/mkapi
+  cat /tmp/name_api.cpp.in |sed -n '/%DSO%/!p;/%DSO%/r/tmp/mkapi/dso' \
+  > /tmp/mkapi/name_api.cpp
+  cp -af /tmp/mkapi/name_api.cpp /tmp/name_api.cpp.in
+fi
+
 [ -f config/${NAME}/skip ] && SKIP_REG=`cat config/${NAME}/skip |xargs |tr ' ' '|'`
 cat /tmp/mkapi/name_api.cpp |sed "s/%Name%/$NAME/g" | sed "s/%NAME%/$NAME_U/g"  | sed "s/%name%/$NAME_L/g" \
     |sed "s,%TEMPLATE%,$TEMPLATE,g" \

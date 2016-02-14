@@ -1,0 +1,28 @@
+
+class EGLLib : public ::capi::dso
+{
+public:
+    virtual void* resolve(const char *symbol) {
+#ifndef __MINGW32__
+        return (void*)dso::resolve(symbol);
+#endif
+        // from qwindowseglcontext.cpp. Play nice with 32-bit mingw: Try func first, then func@0, func@4, ..., func@64.
+        // The def file does not provide any aliases in libEGL and libGLESv2 in these builds which results in exporting function names like eglInitialize@12.
+        // This cannot be fixed without breaking binary compatibility. So be flexible here instead.
+        void *proc = 0;
+        for (int n = -4; !proc && n <= 64; n += 4) {
+            if (n < 0) {
+                proc = (void*)dso::resolve(symbol);
+                continue;
+            }
+            char name[512];
+            CAPI_SNPRINTF(name, sizeof(name), "%s@%d", symbol, n);
+            proc = (void*)dso::resolve(name);
+            if (proc)
+                fprintf(stderr, "%s=>%s\n", symbol, name);
+        }
+        return proc;
+    }
+};
+
+typedef EGLLib user_dso;

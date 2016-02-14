@@ -1,0 +1,11 @@
+#ifdef CAPI_TARGET_OS_WIN
+#if defined(QT_CORE_LIB) && !defined(QT_NO_DEBUG)
+    "libEGLd",
+    "libEGL",
+#else
+    "libEGL",
+    "libEGLd",
+#endif //defined(QT_CORE_LIB) && !defined(QT_NO_DEBUG)
+#else
+    "EGL",
+#endif

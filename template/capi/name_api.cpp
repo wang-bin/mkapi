@@ -23,7 +23,6 @@
 #define DEBUG_LOAD
 //#define CAPI_IS_LAZY_RESOLVE 0
 #ifndef CAPI_LINK_%NAME%
-#include <QtCore/QLibrary>
 #include "capi.h"
 #endif //CAPI_LINK_%NAME%
 #include "%name%_api.h" //include last to avoid covering types later
@@ -45,7 +44,7 @@ static const int versions[] = {
     %VERSIONS%
     , ::capi::EndVersion
 };
-CAPI_BEGIN_DLL_VER(names, versions, QLibrary)
+CAPI_BEGIN_DLL_VER(names, versions, ::capi::dso)
 # else
 CAPI_BEGIN_DLL(names, QLibrary)
 # endif //CAPI_HAS_%NAME%_VERSION

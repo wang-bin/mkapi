@@ -5,3 +5,4 @@
 #ifdef CAPI_TARGET_OS_MAC
     "/System/Library/Frameworks/OpenAL.framework/Versions/A/OpenAL",
 #endif
+    "OpenAL", //blackberry

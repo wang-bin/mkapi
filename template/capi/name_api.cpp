@@ -34,8 +34,7 @@ api::~api(){}
 bool api::loaded() const{return true;}
 #else
 static const char* names[] = {
-    "%Name%",
-    //%LIBS%
+    "%Name%", //%LIBS%
     NULL
 };
 

@@ -1,3 +1,4 @@
+    "openal",
 #ifdef CAPI_TARGET_OS_WIN
     "OpenAL32",
 #endif

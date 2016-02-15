@@ -42,7 +42,7 @@ static const char* names[] = {
 
 class user_dso : public ::capi::dso {}; //%DSO%
 
-# if CAPI_HAS_%NAME%_VERSION
+#if CAPI_HAS_%NAME%_VERSION
 static const int versions[] = {
     ::capi::NoVersion,
 // the following line will be replaced by the content of config/%Name%/version if exists

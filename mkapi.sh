@@ -93,6 +93,12 @@ cat /tmp/mkapi/name_api.h |sed "s/%Name%/$NAME/g" | sed "s/%NAME%/$NAME_U/g"  | 
 echo "generating ${NAME}_api.cpp..."
 cp -af template/${TEMPLATE}/name_api.cpp /tmp/name_api.cpp.in
 cp -af template/${TEMPLATE}/name_api.cpp /tmp/mkapi
+if [ -f config/${NAME}/def ]; then
+  cp -af config/${NAME}/def /tmp/mkapi
+  cat /tmp/name_api.cpp.in |sed -n '/%DEFS%/!p;/%DEFS%/r/tmp/mkapi/def' \
+  > /tmp/mkapi/name_api.cpp
+  cp -af /tmp/mkapi/name_api.cpp /tmp/name_api.cpp.in
+fi
 if [ -f config/${NAME}/version ]; then
   cp -af config/${NAME}/version /tmp/mkapi
   cat /tmp/name_api.cpp.in |sed 's,CAPI_HAS_%NAME%_VERSION,1,g' |sed -n '/%VERSIONS%/!p;/%VERSIONS%/r/tmp/mkapi/version' \

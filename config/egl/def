@@ -1,0 +1,1 @@
+#define CAPI_LINKAGE EGLAPIENTRY // for functions defined in namespace egl::capi
